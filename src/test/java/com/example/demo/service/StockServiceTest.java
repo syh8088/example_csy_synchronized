@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.domain.Stock;
+import com.example.demo.facade.OptimisticLockStockFacade;
 import com.example.demo.repository.StockRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,9 @@ class StockServiceTest {
 
 	@Autowired
 	private StockRepository stockRepository;
+
+	@Autowired
+	private OptimisticLockStockFacade optimisticLockStockFacade;
 
 	@BeforeEach
 	public void before() {
@@ -68,7 +72,7 @@ class StockServiceTest {
 	}
 
 	@Test
-	public void 동시에_100개_요청_V2() throws InterruptedException {
+	public void 동시에_100개_요청_Synchronized() throws InterruptedException {
 		int threadCount = 100;
 
 		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
@@ -92,7 +96,7 @@ class StockServiceTest {
 	}
 
 	@Test
-	public void 동시에_100개_요청_V3() throws InterruptedException {
+	public void 동시에_100개_요청_PessimisticLock() throws InterruptedException {
 		int threadCount = 100;
 
 		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
@@ -102,6 +106,32 @@ class StockServiceTest {
 			executorService.submit(() -> {
 				try {
 					stockService.decreaseOfPessimisticLock(1L, 1L);
+				} finally {
+					countDownLatch.countDown();
+				}
+			});
+		}
+
+		countDownLatch.await();
+
+		Stock stock = stockRepository.findByProductId(1L);
+
+		assertEquals(0, stock.getQuantity());
+	}
+
+	@Test
+	public void 동시에_100개_요청_OptimisticLock() throws InterruptedException {
+		int threadCount = 100;
+
+		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+		CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+
+		for (int i = 0; i < threadCount; i++) {
+			executorService.submit(() -> {
+				try {
+					optimisticLockStockFacade.decrease(1L, 1L);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
 				} finally {
 					countDownLatch.countDown();
 				}

@@ -33,4 +33,11 @@ public class StockService {
 
 		stockRepository.saveAndFlush(stock);
 	}
+
+	public void decreaseOfOptimisticLock(Long productId, Long quantity) {
+		Stock stock = stockRepository.findByProductIdOfOptimisticLock(productId);
+		stock.decrease(quantity);
+
+		stockRepository.saveAndFlush(stock);
+	}
 }
