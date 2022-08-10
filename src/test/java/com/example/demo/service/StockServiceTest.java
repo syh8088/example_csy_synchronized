@@ -4,6 +4,7 @@ import com.example.demo.domain.Stock;
 import com.example.demo.facade.NamedLockStockFacade;
 import com.example.demo.facade.OptimisticLockStockFacade;
 import com.example.demo.facade.RedisLettuceLockStockFacade;
+import com.example.demo.facade.RedisRedissonLockStockFacade;
 import com.example.demo.repository.StockRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,9 @@ class StockServiceTest {
 
 	@Autowired
 	private RedisLettuceLockStockFacade redisLettuceLockStockFacade;
+
+	@Autowired
+	private RedisRedissonLockStockFacade redisRedissonLockStockFacade;
 
 	@BeforeEach
 	public void before() {
@@ -190,6 +194,30 @@ class StockServiceTest {
 					redisLettuceLockStockFacade.decrease(1L, 1L);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
+				} finally {
+					countDownLatch.countDown();
+				}
+			});
+		}
+
+		countDownLatch.await();
+
+		Stock stock = stockRepository.findByProductId(1L);
+
+		assertEquals(0, stock.getQuantity());
+	}
+
+	@Test
+	public void 동시에_100개_요청_Redisson() throws InterruptedException {
+		int threadCount = 100;
+
+		ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+		CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+
+		for (int i = 0; i < threadCount; i++) {
+			executorService.submit(() -> {
+				try {
+					redisRedissonLockStockFacade.decrease(1L, 1L);
 				} finally {
 					countDownLatch.countDown();
 				}

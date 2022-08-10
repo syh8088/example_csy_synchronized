@@ -21,6 +21,10 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	
+	// https://mvnrepository.com/artifact/org.redisson/redisson-spring-boot-starter
+	implementation group: 'org.redisson', name: 'redisson-spring-boot-starter', version: '3.17.5'
+	
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
